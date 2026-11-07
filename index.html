@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>engin@erkus:~$</title>
+<meta name="description" content="Engin Erkus — Data Scientist & OSINT Analyst">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>▮</text></svg>">
+<style>
+  :root {
+    --bg: #0a0e0a;
+    --fg: #b8f5b8;
+    --dim: #4f7a4f;
+    --accent: #39ff6a;
+    --warn: #ffb347;
+    --err: #ff5f5f;
+    --link: #6ad8ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); }
+  body {
+    color: var(--fg);
+    font: 15px/1.55 "JetBrains Mono", "Fira Code", ui-monospace, Menlo, Consolas, monospace;
+    overflow: hidden;
+  }
+  /* subtle CRT scanlines */
+  body::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px);
+  }
+  #term {
+    height: 100%; overflow-y: auto; padding: 24px clamp(14px, 4vw, 48px) 40px;
+    max-width: 920px; margin: 0 auto;
+  }
+  .line { white-space: pre-wrap; word-break: break-word; }
+  .dim { color: var(--dim); }
+  .acc { color: var(--accent); }
+  .warn { color: var(--warn); }
+  .err { color: var(--err); }
+  a { color: var(--link); text-decoration: none; border-bottom: 1px dotted var(--link); }
+  a:hover { background: var(--link); color: var(--bg); }
+  .cmd { color: var(--accent); cursor: pointer; }
+  .cmd:hover { text-decoration: underline; }
+  .prompt { color: var(--accent); }
+  .prompt .path { color: var(--link); }
+  #input-line { display: flex; gap: .6ch; }
+  #input {
+    flex: 1; background: transparent; border: 0; outline: 0;
+    color: var(--fg); font: inherit; caret-color: var(--accent);
+  }
+  .ascii { color: var(--accent); line-height: 1.15; font-size: clamp(7px, 1.9vw, 14px); }
+  ::selection { background: var(--accent); color: var(--bg); }
+  #term::-webkit-scrollbar { width: 6px; }
+  #term::-webkit-scrollbar-thumb { background: var(--dim); }
+</style>
+</head>
+<body>
+<div id="term" aria-live="polite">
+  <div id="out"></div>
+  <div id="input-line" hidden>
+    <span class="prompt">visitor@erkus<span class="dim">:</span><span class="path">~</span><span class="dim">$</span></span>
+    <input id="input" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Terminal input">
+  </div>
+</div>
+
+<script>
+/* ===== REDIGÉR DIT INDHOLD HER ===== */
+const ME = {
+  name: "Engin Erkus",
+  title: "Data Scientist · OSINT Analyst",
+  email: "din@email.dk",                       // ← skift
+  github: "https://github.com/sh4d0wbyt3",
+  linkedin: "https://linkedin.com/in/DIT-NAVN", // ← skift eller slet
+};
+
+const PAGES = {
+  about: `
+<span class="acc">## whoami</span>
+${ME.name} — ${ME.title}
+
+MSc i Data Science fra SDU. Arbejder med open source intelligence,
+dataanalyse og machine learning — at finde signal i støjen.
+
+Sprog: dansk · engelsk · tyrkisk · arabisk`,
+
+  skills: `
+<span class="acc">## skills</span>
+<span class="dim">[osint]</span>    kildeanalyse · verifikation · geolokation · netværksanalyse
+<span class="dim">[data]</span>     python · pandas · sql · visualisering
+<span class="dim">[ml]</span>       pytorch · bayesian methods · reinforcement learning · LLM/RAG
+<span class="dim">[sec]</span>      linux · ethical hacking <span class="dim">(lærer stadig)</span>`,
+
+  projects: `
+<span class="acc">## projects</span>
+<span class="warn">01</span>  GP-TD3 — Bayesian reinforcement learning med Gaussian Process critics (speciale)
+<span class="warn">02</span>  Lokalt LLM-system med RAG til analysearbejde
+<span class="warn">03</span>  Skalerbar OSINT-pipeline til virksomhedsverifikation
+<span class="warn">04</span>  ML-model til intraday-handel på elmarkedet`,
+
+  contact: () => `
+<span class="acc">## contact</span>
+mail      <a href="mailto:${ME.email}">${ME.email}</a>
+github    <a href="${ME.github}" target="_blank" rel="noopener">${ME.github.replace("https://","")}</a>
+linkedin  <a href="${ME.linkedin}" target="_blank" rel="noopener">${ME.linkedin.replace("https://","")}</a>`,
+};
+/* ===== SLUT PÅ INDHOLD ===== */
+
+const out = document.getElementById("out");
+const input = document.getElementById("input");
+const inputLine = document.getElementById("input-line");
+const term = document.getElementById("term");
+const history = []; let hIdx = 0;
+
+const BANNER = `
+ ███████╗███╗   ██╗ ██████╗ ██╗███╗   ██╗
+ ██╔════╝████╗  ██║██╔════╝ ██║████╗  ██║
+ █████╗  ██╔██╗ ██║██║  ███╗██║██╔██╗ ██║
+ ██╔══╝  ██║╚██╗██║██║   ██║██║██║╚██╗██║
+ ███████╗██║ ╚████║╚██████╔╝██║██║ ╚████║
+ ╚══════╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝`;
+
+const c = (name) => `<span class="cmd" data-cmd="${name}">${name}</span>`;
+
+const COMMANDS = {
+  help: () => `
+Tilgængelige kommandoer:
+  ${c("about")}      hvem jeg er
+  ${c("skills")}     hvad jeg arbejder med
+  ${c("projects")}   udvalgte projekter
+  ${c("contact")}    kom i kontakt
+  ${c("ls")}         vis filer
+  ${c("clear")}      ryd skærmen
+<span class="dim">tip: ↑/↓ for historik, tab for autocomplete</span>`,
+  about: () => PAGES.about,
+  whoami: () => PAGES.about,
+  skills: () => PAGES.skills,
+  projects: () => PAGES.projects,
+  contact: () => PAGES.contact(),
+  ls: () => `<span class="link">about.txt  skills.txt  projects.txt  contact.txt  <span class="dim">.secrets/</span></span>`,
+  cat: (arg) => {
+    const k = (arg || "").replace(".txt", "");
+    if (PAGES[k]) return typeof PAGES[k] === "function" ? PAGES[k]() : PAGES[k];
+    return `<span class="err">cat: ${esc(arg || "")}: No such file or directory</span>`;
+  },
+  cd: (arg) => arg === ".secrets" || arg === ".secrets/"
+    ? `<span class="err">bash: cd: .secrets: Permission denied</span>`
+    : `<span class="dim">der er ikke så meget at se her ¯\\_(ツ)_/¯</span>`,
+  sudo: () => `<span class="err">visitor is not in the sudoers file. This incident will be reported.</span>`,
+  date: () => new Date().toString(),
+  echo: (...a) => esc(a.join(" ")),
+  banner: () => `<div class="ascii">${BANNER}</div>`,
+  clear: () => { out.innerHTML = ""; return null; },
+};
+
+function esc(s) { return s.replace(/[&<>"]/g, ch => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[ch])); }
+
+function print(html, cls = "") {
+  const d = document.createElement("div");
+  d.className = "line " + cls;
+  d.innerHTML = html;
+  out.appendChild(d);
+  term.scrollTop = term.scrollHeight;
+}
+
+function promptHTML(cmd) {
+  return `<span class="prompt">visitor@erkus<span class="dim">:</span><span class="path">~</span><span class="dim">$</span></span> ${esc(cmd)}`;
+}
+
+function run(raw) {
+  const cmd = raw.trim();
+  print(promptHTML(cmd));
+  if (!cmd) return;
+  history.push(cmd); hIdx = history.length;
+  const [name, ...args] = cmd.split(/\s+/);
+  const fn = COMMANDS[name.toLowerCase()];
+  if (!fn) return print(`<span class="err">command not found: ${esc(name)}</span> — prøv ${c("help")}`);
+  const res = fn(...args);
+  if (res !== null) print(res);
+}
+
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { run(input.value); input.value = ""; }
+  else if (e.key === "ArrowUp") { if (hIdx > 0) input.value = history[--hIdx]; e.preventDefault(); }
+  else if (e.key === "ArrowDown") { hIdx = Math.min(history.length, hIdx + 1); input.value = history[hIdx] || ""; }
+  else if (e.key === "Tab") {
+    e.preventDefault();
+    const m = Object.keys(COMMANDS).filter(k => k.startsWith(input.value));
+    if (m.length === 1) input.value = m[0];
+  } else if (e.key === "l" && e.ctrlKey) { e.preventDefault(); COMMANDS.clear(); }
+});
+
+out.addEventListener("click", (e) => {
+  const t = e.target.closest(".cmd");
+  if (t) { run(t.dataset.cmd); input.focus(); }
+});
+term.addEventListener("click", () => { if (!getSelection().toString()) input.focus(); });
+
+/* boot sequence */
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function boot() {
+  const steps = [
+    ["[ ok ] initializing session...", "dim"],
+    ["[ ok ] routing through 3 relays...", "dim"],
+    ["[ ok ] handshake complete", "dim"],
+  ];
+  for (const [t, cls] of steps) { print(t, cls); await sleep(260); }
+  await sleep(150);
+  print(`<div class="ascii">${BANNER}</div>`);
+  print(`${ME.title}\n`);
+  print(`Velkommen. Skriv ${c("help")} for at komme i gang — eller klik på en kommando.\n`);
+  inputLine.hidden = false;
+  input.focus();
+}
+boot();
+</script>
+</body>
+</html>
