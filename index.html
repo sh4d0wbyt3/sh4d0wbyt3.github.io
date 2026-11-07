@@ -69,7 +69,6 @@ const ME = {
   name: "Engin Erkus",
   title: "Data Scientist · OSINT Analyst",
   email: "din@email.dk",                       // ← skift
-  github: "https://github.com/sh4d0wbyt3",
   linkedin: "https://linkedin.com/in/DIT-NAVN", // ← skift eller slet
 };
 
@@ -100,7 +99,6 @@ Sprog: dansk · engelsk · tyrkisk · arabisk`,
   contact: () => `
 <span class="acc">## contact</span>
 mail      <a href="mailto:${ME.email}">${ME.email}</a>
-github    <a href="${ME.github}" target="_blank" rel="noopener">${ME.github.replace("https://","")}</a>
 linkedin  <a href="${ME.linkedin}" target="_blank" rel="noopener">${ME.linkedin.replace("https://","")}</a>`,
 };
 /* ===== SLUT PÅ INDHOLD ===== */
@@ -149,7 +147,7 @@ Tilgængelige kommandoer:
   date: () => new Date().toString(),
   echo: (...a) => esc(a.join(" ")),
   banner: () => `<div class="ascii">${BANNER}</div>`,
-  clear: () => { out.innerHTML = ""; return null; },
+  clear: () => { out.innerHTML = ""; showHome(); return null; },
 };
 
 function esc(s) { return s.replace(/[&<>"]/g, ch => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[ch])); }
@@ -195,6 +193,12 @@ out.addEventListener("click", (e) => {
 });
 term.addEventListener("click", () => { if (!getSelection().toString()) input.focus(); });
 
+function showHome() {
+  print(`<div class="ascii">${BANNER}</div>`);
+  print(`${ME.title}\n`);
+  print(`Velkommen. Skriv ${c("help")} for at komme i gang — eller klik på en kommando.\n`);
+}
+
 /* boot sequence */
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function boot() {
@@ -205,9 +209,7 @@ async function boot() {
   ];
   for (const [t, cls] of steps) { print(t, cls); await sleep(260); }
   await sleep(150);
-  print(`<div class="ascii">${BANNER}</div>`);
-  print(`${ME.title}\n`);
-  print(`Velkommen. Skriv ${c("help")} for at komme i gang — eller klik på en kommando.\n`);
+  showHome();
   inputLine.hidden = false;
   input.focus();
 }
