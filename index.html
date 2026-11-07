@@ -143,6 +143,19 @@ const BANNER = `
  ╚══════╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝`;
 
 const c = (name) => `<span class="cmd" data-cmd="${name}">${name}</span>`;
+const cl = (label, cmd) => `<span class="cmd" data-cmd="${cmd}">${label}</span>`;
+
+/* mini-CTF i .secrets */
+let unlocked = false;
+const SECRET = {
+  hint: "c2lnbmFs",   // base64 af kodeordet
+  flag: `
+<span class="acc">## flag.txt</span>
+flag{signal_i_stoejen}
+
+Godt gået. Du fandt den skjulte fil, dekodede kodeordet og kom ind.
+Send flaget til mig via ${c("contact")}, hvis du vil sige hej.`,
+};
 
 const COMMANDS = {
   help: () => `
@@ -215,15 +228,40 @@ dark mode   ${matchMedia("(prefers-color-scheme: dark)").matches ? "ja" : "nej"}
   skills: () => PAGES.skills,
   projects: () => PAGES.projects,
   contact: () => PAGES.contact(),
-  ls: () => `<span class="link">about.txt  skills.txt  projects.txt  contact.txt  <span class="dim">.secrets/</span></span>`,
-  cat: (arg) => {
-    const k = (arg || "").replace(".txt", "");
-    if (PAGES[k]) return typeof PAGES[k] === "function" ? PAGES[k]() : PAGES[k];
-    return `<span class="err">cat: ${esc(arg || "")}: No such file or directory</span>`;
+  ls: (arg) => {
+    const files = ["about.txt", "skills.txt", "projects.txt", "contact.txt"].map(f => cl(f, "cat " + f));
+    if (arg && arg.startsWith("-") && arg.includes("a")) files.push(cl(".hint", "cat .hint"));
+    files.push(`<span class="dim">${cl(".secrets/", "cd .secrets")}</span>`);
+    return files.join("  ");
   },
-  cd: (arg) => arg === ".secrets" || arg === ".secrets/"
-    ? `<span class="err">bash: cd: .secrets: Permission denied</span>`
-    : `<span class="dim">der er ikke så meget at se her ¯\\_(ツ)_/¯</span>`,
+  cat: (arg = "") => {
+    if (arg === ".hint") return `
+<span class="warn">${SECRET.hint}</span>
+<span class="dim">// base64. dekod den, og kør:</span> unlock &lt;kodeord&gt;`;
+    if (arg.replace(/^\.\//, "").startsWith(".secrets/")) {
+      if (!unlocked) return `<span class="err">cat: ${esc(arg)}: Permission denied</span>`;
+      if (arg.endsWith("flag.txt")) return SECRET.flag;
+    }
+    const k = arg.replace(".txt", "");
+    if (PAGES[k]) return typeof PAGES[k] === "function" ? PAGES[k]() : PAGES[k];
+    return `<span class="err">cat: ${esc(arg)}: No such file or directory</span>`;
+  },
+  cd: (arg = "") => {
+    if (arg.replace(/^\.\//, "").replace(/\/$/, "") === ".secrets") {
+      if (unlocked) return `${cl("flag.txt", "cat .secrets/flag.txt")}`;
+      return `<span class="err">bash: cd: .secrets: Permission denied</span>
+<span class="dim">// ikke alle filer er synlige. prøv</span> ${cl("ls -a", "ls -a")}`;
+    }
+    return `<span class="dim">der er ikke så meget at se her ¯\\_(ツ)_/¯</span>`;
+  },
+  unlock: (pw) => {
+    if (!pw) return `<span class="dim">brug:</span> unlock &lt;kodeord&gt;`;
+    if (pw.toLowerCase() === atob(SECRET.hint)) {
+      unlocked = true;
+      return `<span class="acc">ACCESS GRANTED.</span> .secrets/ er låst op → ${cl("cd .secrets", "cd .secrets")}`;
+    }
+    return `<span class="err">ACCESS DENIED.</span> forkert kodeord.`;
+  },
   sudo: () => `<span class="err">visitor is not in the sudoers file. This incident will be reported.</span>`,
   date: () => new Date().toString(),
   echo: (...a) => esc(a.join(" ")),
@@ -250,7 +288,8 @@ function run(raw) {
   print(promptHTML(cmd));
   if (!cmd) return;
   history.push(cmd); hIdx = history.length;
-  const [name, ...args] = cmd.split(/\s+/);
+  let [name, ...args] = cmd.split(/\s+/);
+  if (/^\.{0,2}\//.test(name) || name.startsWith(".secrets")) { args = [name]; name = "cd"; }
   const fn = COMMANDS[name.toLowerCase()];
   if (!fn) return print(`<span class="err">command not found: ${esc(name)}</span> — prøv ${c("help")}`);
   const res = fn(...args);
