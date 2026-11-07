@@ -91,7 +91,7 @@
 const ME = {
   name: "Engin Erkus",
   title: "Data Scientist · OSINT Analyst",
-  email: "engin@engind.dk",                       
+  email: "engin@engin.dk",                       
   //linkedin: "https://linkedin.com/in/DIT-NAVN",
 };
 
@@ -119,10 +119,12 @@ Sprog: dansk · engelsk · tyrkisk · arabisk`,
 <span class="warn">03</span>  Skalerbar OSINT-pipeline til virksomhedsverifikation
 <span class="warn">04</span>  ML-model til intraday-handel på elmarkedet`,
 
-  contact: () => `
-<span class="acc">## contact</span>
-mail      <a href="mailto:${ME.email}">${ME.email}</a>
-linkedin  <a href="${ME.linkedin}" target="_blank" rel="noopener">${ME.linkedin.replace("https://","")}</a>`,
+  contact: () => {
+    let s = `\n<span class="acc">## contact</span>\n`;
+    if (ME.email) s += `mail      <a href="mailto:${ME.email}">${ME.email}</a>\n`;
+    if (ME.linkedin) s += `linkedin  <a href="${ME.linkedin}" target="_blank" rel="noopener">${ME.linkedin.replace("https://", "")}</a>\n`;
+    return s;
+  },
 };
 /* ===== SLUT PÅ INDHOLD ===== */
 
