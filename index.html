@@ -20,7 +20,7 @@
   html, body { height: 100%; background: var(--bg); }
   body {
     color: var(--fg);
-    font: 15px/1.55 "JetBrains Mono", "Fira Code", ui-monospace, Menlo, Consolas, monospace;
+    font: bold 15px/1.55 "JetBrains Mono", "Fira Code", ui-monospace, Menlo, Consolas, monospace;
     overflow: hidden;
   }
   /* subtle CRT scanlines */
@@ -52,9 +52,32 @@
   ::selection { background: var(--accent); color: var(--bg); }
   #term::-webkit-scrollbar { width: 6px; }
   #term::-webkit-scrollbar-thumb { background: var(--dim); }
+
+  /* matrix rain background */
+  #rain {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    opacity: .14; transition: opacity .8s ease;
+  }
+  #rain.loud { opacity: .55; }
+  #term { position: relative; z-index: 1; }
+
+  /* glitch on the banner */
+  .glitch { animation: glitch 7s infinite steps(1); }
+  @keyframes glitch {
+    0%, 93%, 100% { text-shadow: none; transform: none; }
+    94% { text-shadow: 2px 0 var(--err), -2px 0 var(--link); transform: translateX(1px); }
+    95% { text-shadow: -3px 0 var(--err), 3px 0 var(--link); transform: translateX(-2px) skewX(-4deg); }
+    96% { text-shadow: 1px 0 var(--err), -1px 0 var(--link); transform: none; }
+  }
+  .bar { color: var(--accent); }
+  @media (prefers-reduced-motion: reduce) {
+    .glitch { animation: none; }
+    #rain { display: none; }
+  }
 </style>
 </head>
 <body>
+<canvas id="rain" aria-hidden="true"></canvas>
 <div id="term" aria-live="polite">
   <div id="out"></div>
   <div id="input-line" hidden>
@@ -68,8 +91,8 @@
 const ME = {
   name: "Engin Erkus",
   title: "Data Scientist · OSINT Analyst",
-  email: "din@email.dk",                       // ← skift
-  linkedin: "https://linkedin.com/in/DIT-NAVN", // ← skift eller slet
+  email: "engin@engind.dk",                       
+  //linkedin: "https://linkedin.com/in/DIT-NAVN",
 };
 
 const PAGES = {
@@ -128,7 +151,63 @@ Tilgængelige kommandoer:
   ${c("contact")}    kom i kontakt
   ${c("ls")}         vis filer
   ${c("clear")}      ryd skærmen
+
+<span class="dim">// ekstra</span>
+  ${c("whois")}      hvad din browser afslører om dig
+  ${c("trace")}      spor forbindelsen
+  ${c("hack")}       prøv lykken
+  ${c("matrix")}     skru op for regnen
 <span class="dim">tip: ↑/↓ for historik, tab for autocomplete</span>`,
+  matrix: () => {
+    const on = rainEl.classList.toggle("loud");
+    return on ? `<span class="acc">wake up, visitor...</span>` : `<span class="dim">back to normal.</span>`;
+  },
+  whois: () => {
+    const n = navigator, s = screen;
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const os = /Windows/.test(n.userAgent) ? "Windows" : /Mac/.test(n.userAgent) ? "macOS"
+      : /Android/.test(n.userAgent) ? "Android" : /iPhone|iPad/.test(n.userAgent) ? "iOS"
+      : /Linux/.test(n.userAgent) ? "Linux" : "ukendt";
+    const br = /Edg\//.test(n.userAgent) ? "Edge" : /Chrome\//.test(n.userAgent) ? "Chrome"
+      : /Firefox\//.test(n.userAgent) ? "Firefox" : /Safari\//.test(n.userAgent) ? "Safari" : "ukendt";
+    return `
+<span class="acc">## whois visitor</span>
+os          ${os}
+browser     ${br}
+sprog       ${esc(n.language || "?")}
+tidszone    ${esc(tz || "?")}
+skærm       ${s.width}x${s.height} @ ${window.devicePixelRatio}x
+cpu-kerner  ${n.hardwareConcurrency || "?"}
+dark mode   ${matchMedia("(prefers-color-scheme: dark)").matches ? "ja" : "nej"}
+
+<span class="dim">// alt det her ved enhver side du besøger. intet af det gemmes her.</span>`;
+  },
+  trace: async () => {
+    const hops = ["visitor.local", "gw.isp.net", "core-cph.backbone", "ix.dk-peering", "edge.cdn", "engin.dk"];
+    print(`traceroute to engin.dk, ${hops.length} hops max`, "dim");
+    for (let i = 0; i < hops.length; i++) {
+      await sleep(320 + Math.random() * 300);
+      const ms = (4 + i * 3 + Math.random() * 4).toFixed(1);
+      print(` ${i + 1}  ${hops[i].padEnd(20)} ${ms} ms`, i === hops.length - 1 ? "acc" : "");
+    }
+    await sleep(250);
+    return `<span class="acc">connection established.</span> du fandt mig.`;
+  },
+  hack: async () => {
+    const steps = ["bypassing firewall", "decrypting mainframe", "escalating privileges"];
+    for (const s of steps) {
+      const line = document.createElement("div");
+      line.className = "line";
+      out.appendChild(line);
+      for (let p = 0; p <= 20; p++) {
+        line.innerHTML = `${s.padEnd(24)} <span class="bar">[${"#".repeat(p)}${".".repeat(20 - p)}]</span> ${p * 5}%`;
+        term.scrollTop = term.scrollHeight;
+        await sleep(25 + Math.random() * 40);
+      }
+    }
+    await sleep(300);
+    return `<span class="err">ACCESS DENIED.</span> nice try ;)`;
+  },
   about: () => PAGES.about,
   whoami: () => PAGES.about,
   skills: () => PAGES.skills,
@@ -146,7 +225,7 @@ Tilgængelige kommandoer:
   sudo: () => `<span class="err">visitor is not in the sudoers file. This incident will be reported.</span>`,
   date: () => new Date().toString(),
   echo: (...a) => esc(a.join(" ")),
-  banner: () => `<div class="ascii">${BANNER}</div>`,
+  banner: () => `<div class="ascii glitch">${BANNER}</div>`,
   clear: () => { out.innerHTML = ""; showHome(); return null; },
 };
 
@@ -173,7 +252,10 @@ function run(raw) {
   const fn = COMMANDS[name.toLowerCase()];
   if (!fn) return print(`<span class="err">command not found: ${esc(name)}</span> — prøv ${c("help")}`);
   const res = fn(...args);
-  if (res !== null) print(res);
+  if (res instanceof Promise) {
+    inputLine.hidden = true;
+    res.then(r => { if (r) print(r); inputLine.hidden = false; input.focus(); });
+  } else if (res !== null) print(res);
 }
 
 input.addEventListener("keydown", (e) => {
@@ -194,10 +276,42 @@ out.addEventListener("click", (e) => {
 term.addEventListener("click", () => { if (!getSelection().toString()) input.focus(); });
 
 function showHome() {
-  print(`<div class="ascii">${BANNER}</div>`);
+  print(`<div class="ascii glitch">${BANNER}</div>`);
   print(`${ME.title}\n`);
   print(`Velkommen. Skriv ${c("help")} for at komme i gang — eller klik på en kommando.\n`);
 }
+
+/* matrix rain */
+const rainEl = document.getElementById("rain");
+(function rain() {
+  const ctx = rainEl.getContext("2d");
+  const chars = "01アイウエオカキクケコサシスセソタチツテト<>/{}[]#$%&*01";
+  const size = 16;
+  let cols, drops;
+  function resize() {
+    rainEl.width = innerWidth; rainEl.height = innerHeight;
+    cols = Math.ceil(innerWidth / size);
+    drops = Array.from({ length: cols }, () => Math.random() * -50);
+  }
+  resize(); addEventListener("resize", resize);
+  let last = 0;
+  function frame(t) {
+    requestAnimationFrame(frame);
+    if (t - last < 55) return;   // ~18 fps — rolig og let for CPU'en
+    last = t;
+    ctx.fillStyle = "rgba(10,14,10,0.12)";
+    ctx.fillRect(0, 0, rainEl.width, rainEl.height);
+    ctx.font = size + "px monospace";
+    for (let i = 0; i < cols; i++) {
+      const y = drops[i] * size;
+      ctx.fillStyle = Math.random() < 0.04 ? "#d9ffe0" : "#39ff6a";
+      ctx.fillText(chars[Math.random() * chars.length | 0], i * size, y);
+      if (y > rainEl.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    }
+  }
+  requestAnimationFrame(frame);
+})();
 
 /* boot sequence */
 const sleep = ms => new Promise(r => setTimeout(r, ms));
