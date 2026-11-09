@@ -70,13 +70,70 @@
     96% { text-shadow: 1px 0 var(--err), -1px 0 var(--link); transform: none; }
   }
   .bar { color: var(--accent); }
+  /* ===== INTRO ===== */
+  #intro {
+    position: fixed; inset: 0; z-index: 10; background: #000;
+    display: grid; place-items: center; overflow: hidden; cursor: pointer;
+  }
+  #intro-stream {
+    position: absolute; inset: 0; margin: 0; padding: 12px 16px;
+    font-size: 12px; line-height: 1.35; color: var(--dim); opacity: .55;
+    white-space: pre; overflow: hidden; font-weight: normal;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 35%);
+            mask-image: linear-gradient(to bottom, transparent, #000 35%);
+  }
+  #intro-core {
+    position: relative; text-align: center; padding: 28px clamp(18px, 5vw, 48px);
+    border: 1px solid var(--accent); background: rgba(0, 0, 0, .88);
+    box-shadow: 0 0 40px rgba(57, 255, 106, .18), inset 0 0 30px rgba(57, 255, 106, .06);
+    min-width: min(420px, 88vw);
+  }
+  #intro-title {
+    font-size: clamp(30px, 8vw, 54px); letter-spacing: .25em; color: var(--accent);
+    text-shadow: 0 0 12px rgba(57, 255, 106, .7); margin-bottom: 18px;
+  }
+  #intro-status { color: var(--fg); min-height: 1.6em; font-size: 14px; }
+  #intro-bar {
+    height: 10px; margin: 12px 0 6px; border: 1px solid var(--dim); padding: 1px;
+  }
+  #intro-fill {
+    height: 100%; width: 0; background: var(--accent);
+    box-shadow: 0 0 10px var(--accent); transition: width .25s ease-out;
+  }
+  #intro-pct { color: var(--dim); font-size: 12px; text-align: right; }
+  #intro-skip {
+    position: absolute; bottom: 18px; left: 0; right: 0; text-align: center;
+    color: var(--dim); font-size: 11px; letter-spacing: .15em;
+    animation: blink 1.4s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  #intro.granted #intro-core { border-color: #fff; box-shadow: 0 0 80px rgba(57, 255, 106, .6); }
+  #intro.granted #intro-status { color: var(--accent); font-size: 18px; letter-spacing: .2em; }
+  #intro.off { animation: crt-off .55s ease-in forwards; }
+  @keyframes crt-off {
+    0%   { transform: scale(1, 1); filter: brightness(1); }
+    55%  { transform: scale(1, .004); filter: brightness(3); }
+    100% { transform: scale(0, .004); filter: brightness(5); opacity: 0; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
+    #intro { display: none; }
     .glitch { animation: none; }
     #rain { display: none; }
   }
 </style>
 </head>
 <body>
+<div id="intro" aria-hidden="true">
+  <pre id="intro-stream"></pre>
+  <div id="intro-core">
+    <div id="intro-title">ENGIN.DK</div>
+    <div id="intro-status">initializing...</div>
+    <div id="intro-bar"><div id="intro-fill"></div></div>
+    <div id="intro-pct">0%</div>
+  </div>
+  <div id="intro-skip">tryk på en tast for at springe over</div>
+</div>
 <canvas id="rain" aria-hidden="true"></canvas>
 <div id="term" aria-live="polite">
   <div id="out"></div>
@@ -236,7 +293,7 @@ dark mode   ${matchMedia("(prefers-color-scheme: dark)").matches ? "ja" : "nej"}
   },
   cat: (arg = "") => {
     if (arg === ".hint") return `
-<span class="warn">${SECRET.hint}</span>
+<span class="warn keep">${SECRET.hint}</span>
 <span class="dim">// base64. dekod den, og kør:</span> unlock &lt;kodeord&gt;`;
     if (arg.replace(/^\.\//, "").startsWith(".secrets/")) {
       if (!unlocked) return `<span class="err">cat: ${esc(arg)}: Permission denied</span>`;
@@ -288,7 +345,7 @@ function run(raw) {
   print(promptHTML(cmd));
   if (!cmd) return;
   history.push(cmd); hIdx = history.length;
-  let [name, ...args] = cmd.split(/\s+/);
+  let [name, ...args] = cmd.toLowerCase().split(/\s+/);
   if (/^\.{0,2}\//.test(name) || name.startsWith(".secrets")) { args = [name]; name = "cd"; }
   const fn = COMMANDS[name.toLowerCase()];
   if (!fn) return print(`<span class="err">command not found: ${esc(name)}</span> — prøv ${c("help")}`);
@@ -356,7 +413,87 @@ const rainEl = document.getElementById("rain");
 
 /* boot sequence */
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+/* ===== INTRO ===== */
+async function intro() {
+  const el = document.getElementById("intro");
+  let seen = false;
+  try { seen = sessionStorage.getItem("introSeen") === "1"; } catch (e) {}
+  if (seen || matchMedia("(prefers-reduced-motion: reduce)").matches) { el.remove(); return; }
+
+  const stream = document.getElementById("intro-stream");
+  const title = document.getElementById("intro-title");
+  const status = document.getElementById("intro-status");
+  const fill = document.getElementById("intro-fill");
+  const pct = document.getElementById("intro-pct");
+
+  let skipped = false;
+  const skip = () => { skipped = true; };
+  addEventListener("keydown", skip, { once: true });
+  el.addEventListener("click", skip, { once: true });
+  const wait = async (ms) => { const end = Date.now() + ms; while (!skipped && Date.now() < end) await sleep(20); };
+
+  // scrolling "hacker" stream
+  const hex = (n) => Array.from({ length: n }, () => (Math.random() * 16 | 0).toString(16)).join("");
+  const ip = () => [0, 0, 0, 0].map(() => Math.random() * 255 | 0).join(".");
+  const verbs = ["scanning", "resolving", "handshake", "probing", "tracing", "decrypting", "mapping"];
+  const lineGen = [
+    () => `0x${hex(8)}  ${hex(32).match(/../g).join(" ")}`,
+    () => `[+] ${verbs[Math.random() * verbs.length | 0]} ${ip()}:${Math.random() * 65535 | 0} ... ok`,
+    () => `[${(performance.now() / 1000).toFixed(3)}] sha256 ${hex(48)}`,
+    () => `GET /${hex(6)}/${hex(4)} HTTP/1.1  200  ${Math.random() * 900 | 0}ms`,
+  ];
+  const lines = [];
+  const streamTimer = setInterval(() => {
+    lines.push(lineGen[Math.random() * lineGen.length | 0]());
+    if (lines.length > 80) lines.shift();
+    stream.textContent = lines.join("\n");
+    stream.scrollTop = stream.scrollHeight;
+  }, 35);
+
+  // title "decrypts" itself
+  const target = "ENGIN.DK", glyphs = "!<>-_\\/[]{}=+*^?#01ABCDEF";
+  let solved = 0;
+  const scrambleTimer = setInterval(() => {
+    title.textContent = target.split("").map((ch, i) =>
+      i < solved ? ch : glyphs[Math.random() * glyphs.length | 0]).join("");
+  }, 45);
+
+  const stages = [
+    [8,  "resolving engin.dk"],
+    [19, "routing through tor relays"],
+    [33, "bypassing firewall"],
+    [47, "cracking hash"],
+    [61, "decrypting payload"],
+    [76, "escalating privileges"],
+    [90, "spawning shell"],
+    [100, "verifying identity"],
+  ];
+  for (const [p, text] of stages) {
+    if (skipped) break;
+    status.textContent = text + "...";
+    fill.style.width = p + "%";
+    pct.textContent = p + "%";
+    solved = Math.round(target.length * p / 100);
+    await wait(380 + Math.random() * 260);
+  }
+
+  clearInterval(scrambleTimer);
+  title.textContent = target;
+  fill.style.width = "100%"; pct.textContent = "100%";
+  status.textContent = "ACCESS GRANTED";
+  el.classList.add("granted");
+  if (!skipped) await wait(900);
+
+  clearInterval(streamTimer);
+  el.classList.add("off");
+  await sleep(560);
+  el.remove();
+  removeEventListener("keydown", skip);
+  try { sessionStorage.setItem("introSeen", "1"); } catch (e) {}
+}
+
 async function boot() {
+  await intro();
   const steps = [
     ["[ ok ] initializing session...", "dim"],
     ["[ ok ] routing through 3 relays...", "dim"],
