@@ -98,14 +98,44 @@
   #intro-scan .v { color: var(--accent); }
   #intro-scan .cur { display: inline-block; width: .6em; background: var(--accent); animation: blink 1s steps(1) infinite; }
   #intro-login {
-    position: absolute; left: 0; top: 0; padding: 16px 20px;
-    font-size: 15px; line-height: 1.6; color: #d0d0d0; white-space: pre-wrap;
-    opacity: 0; cursor: text;
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%) scale(.96);
+    width: min(540px, 90vw); padding: 18px 24px 16px;
+    font-size: 15px; line-height: 1.6; color: #d6d6d6;
+    background:
+      linear-gradient(var(--accent), var(--accent)) top left / 22px 2px no-repeat,
+      linear-gradient(var(--accent), var(--accent)) top left / 2px 22px no-repeat,
+      linear-gradient(var(--accent), var(--accent)) top right / 22px 2px no-repeat,
+      linear-gradient(var(--accent), var(--accent)) top right / 2px 22px no-repeat,
+      linear-gradient(var(--accent), var(--accent)) bottom left / 22px 2px no-repeat,
+      linear-gradient(var(--accent), var(--accent)) bottom left / 2px 22px no-repeat,
+      linear-gradient(var(--accent), var(--accent)) bottom right / 22px 2px no-repeat,
+      linear-gradient(var(--accent), var(--accent)) bottom right / 2px 22px no-repeat,
+      rgba(0, 6, 2, .82);
+    border: 1px solid rgba(57, 255, 106, .18);
+    box-shadow: 0 0 60px rgba(57, 255, 106, .12), inset 0 0 40px rgba(57, 255, 106, .04);
+    opacity: 0; transition: opacity .35s, transform .35s; cursor: text;
   }
-  #intro-login.show { opacity: 1; }
+  #intro-login.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  #intro-login .hdr {
+    display: flex; justify-content: space-between; gap: 12px;
+    font-size: 11px; letter-spacing: .18em; color: var(--dim);
+    border-bottom: 1px solid rgba(57, 255, 106, .18); padding-bottom: 8px; margin-bottom: 14px;
+  }
+  #intro-login .dot {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px;
+    background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse { 50% { opacity: .3; } }
+  #intro-login .body { white-space: pre-wrap; min-height: 11.2em; }
+  #intro-login .ftr {
+    margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(57, 255, 106, .12);
+    font-size: 11px; letter-spacing: .12em; color: var(--dim);
+  }
+  #intro-login .acc { color: var(--accent); }
   #intro-login .dim { color: #6b6b6b; }
-  #intro-login .login-input { color: #fff; }
-  #intro-login .blk { display: inline-block; width: .6em; background: #d0d0d0; animation: blink 1s steps(1) infinite; }
+  #intro-login .login-input { color: #fff; width: 16ch; }
+  #intro-login .blk { display: inline-block; width: .6em; background: #d6d6d6; animation: blink 1s steps(1) infinite; }
   #intro-granted {
     position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(.9);
     padding: 14px 34px; border: 2px solid var(--accent); color: var(--accent); background: #000;
@@ -567,14 +597,18 @@ async function intro() {
   removeEventListener("keydown", skip);
   el.removeEventListener("click", skip);
   document.getElementById("intro-skip").remove();
-  running = false;
-  cv.style.transition = "opacity .5s"; cv.style.opacity = "0";
-  await sleep(reduced ? 0 : 550);
+  cv.style.transition = "opacity .6s"; cv.style.opacity = ".16";
+  await sleep(reduced ? 0 : 450);
 
   const host = "erkus";
-  box.innerHTML = `Engin GNU/Linux Rolling ${host} tty1\n\n`;
+  box.innerHTML = `
+    <div class="hdr"><span><span class="dot"></span>${host.toUpperCase()} · TTY1</span><span>SECURE SHELL</span></div>
+    <div class="body"></div>
+    <div class="ftr">aes-256-gcm · ed25519 · node 07</div>`;
+  const body = box.querySelector(".body");
+  body.append(`Engin GNU/Linux Rolling ${host} tty1\n\n`);
   const row = document.createElement("span");
-  row.textContent = `${host} login: `;
+  row.innerHTML = `<span class="acc">${host} login:</span> `;
   const inp = document.createElement("input");
   inp.className = "login-input";
   inp.maxLength = 16;
@@ -583,7 +617,7 @@ async function intro() {
   const hint = document.createElement("div");
   hint.className = "dim";
   hint.textContent = "\n// skriv dit navn og tryk enter";
-  box.append(row, inp, hint);
+  body.append(row, inp, hint);
   box.classList.add("show");
   el.addEventListener("click", () => inp.focus());
   inp.focus();
@@ -597,20 +631,22 @@ async function intro() {
 
   // Password: ekkoer intet, ligesom en rigtig konsol
   const pw = document.createElement("span");
-  pw.innerHTML = `Password: <span class="blk">&nbsp;</span>`;
-  box.appendChild(pw);
+  pw.innerHTML = `<span class="acc">Password:</span> <span class="blk">&nbsp;</span>`;
+  body.appendChild(pw);
   await sleep(900);
-  pw.innerHTML = "Password: \n";
+  pw.innerHTML = `<span class="acc">Password:</span>\n`;
 
   const d = new Date();
   const stamp = d.toDateString() + " " + d.toTimeString().slice(0, 8);
   const motd = [
-    `Linux ${host} 6.9.0-erkus #1 SMP PREEMPT_DYNAMIC x86_64`,
-    "",
-    `Last login: ${stamp} on tty1`,
-    "",
+    `<span class="dim">Linux ${host} 6.9.0-erkus #1 SMP PREEMPT_DYNAMIC x86_64</span>`,
+    `<span class="dim">Last login: ${stamp} on tty1</span>`,
+    `[ <span class="acc">ok</span> ] authenticated as <span class="acc">${esc(name)}</span>`,
   ];
-  for (const m of motd) { box.append(m + "\n"); await sleep(110); }
+  for (const m of motd) {
+    const l = document.createElement("div"); l.innerHTML = m; body.appendChild(l);
+    await sleep(150);
+  }
   setUser(name);
   try { sessionStorage.setItem("user", name); } catch (e) {}
   await sleep(400);
@@ -619,6 +655,7 @@ async function intro() {
   granted.classList.add("show");
   await sleep(reduced ? 300 : 1000);
 
+  running = false;
   if (!reduced) { el.classList.add("off"); await sleep(560); }
   el.remove();
 }
