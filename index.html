@@ -143,10 +143,6 @@
     box-shadow: 0 0 60px rgba(57,255,106,.5); opacity: 0; transition: opacity .15s, transform .25s;
   }
   #intro-granted.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  #intro-skip {
-    position: absolute; bottom: 16px; left: 0; right: 0; text-align: center;
-    color: var(--dim); font-size: 11px; letter-spacing: .15em; animation: blink 1.4s steps(1) infinite;
-  }
   @keyframes blink { 50% { opacity: 0; } }
   #intro.off { animation: crt-off .55s ease-in forwards; }
   @keyframes crt-off {
@@ -164,12 +160,10 @@
 </head>
 <body>
 <div id="intro" aria-hidden="true">
-  <canvas id="intro-canvas"></canvas>
   <pre id="intro-log"></pre>
   <div id="intro-scan"></div>
   <div id="intro-login"></div>
   <div id="intro-granted">ACCESS GRANTED</div>
-  <div id="intro-skip">tryk på en tast for at springe over</div>
 </div>
 <canvas id="rain" aria-hidden="true"></canvas>
 <div id="term" aria-live="polite">
@@ -462,13 +456,8 @@ async function intro() {
   const scan = document.getElementById("intro-scan");
   const box = document.getElementById("intro-login");
   const granted = document.getElementById("intro-granted");
-  const cv = document.getElementById("intro-canvas");
-  const ctx = cv.getContext("2d");
 
   let skipped = reduced;
-  const skip = () => { skipped = true; };
-  addEventListener("keydown", skip);
-  el.addEventListener("click", skip);
   const wait = async (ms) => { const end = Date.now() + ms; while (!skipped && Date.now() < end) await sleep(16); };
   const rnd = (n) => Math.random() * n | 0;
   const hex = (n) => Array.from({ length: n }, () => rnd(16).toString(16)).join("");
@@ -536,69 +525,7 @@ async function intro() {
   scan.style.transition = "opacity .3s"; scan.style.opacity = "0";
   await wait(250);
 
-  /* --- fase 3: tegn sværmer ind og danner navnet --- */
-  const dpr = Math.min(devicePixelRatio || 1, 2);
-  const W = innerWidth, H = innerHeight;
-  cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + "px"; cv.style.height = H + "px";
-  ctx.scale(dpr, dpr);
-
-  const word = "ENGIN";
-  const off = document.createElement("canvas");
-  off.width = W; off.height = H;
-  const octx = off.getContext("2d");
-  const fs = Math.min(W * 0.22, 240);
-  octx.font = `900 ${fs}px "JetBrains Mono", Consolas, monospace`;
-  octx.textAlign = "center"; octx.textBaseline = "middle";
-  octx.fillStyle = "#fff"; octx.fillText(word, W / 2, H / 2);
-  const data = octx.getImageData(0, 0, W, H).data;
-  const gap = W < 600 ? 5 : 7;
-  const glyphs = "01アイウエオカキクケコサシスセソ<>/{}[]#$%&*ABCDEF";
-  const parts = [];
-  for (let y = 0; y < H; y += gap) for (let x = 0; x < W; x += gap) {
-    if (data[(y * W + x) * 4 + 3] > 128) {
-      parts.push({ x: Math.random() * W, y: Math.random() * H, tx: x, ty: y,
-        ch: glyphs[rnd(glyphs.length)], sp: 0.04 + Math.random() * 0.06 });
-    }
-  }
-  const t0 = performance.now();
-  let glitchUntil = 0, running = true, lockGlitch = false;
-  function draw(now) {
-    if (!running) return;
-    const t = now - t0;
-    ctx.fillStyle = "rgba(0,0,0,0.28)";
-    ctx.fillRect(0, 0, W, H);
-    ctx.font = `${gap + 3}px monospace`;
-    for (const p of parts) {
-      if (skipped) { p.x = p.tx; p.y = p.ty; }
-      else { p.x += (p.tx - p.x) * p.sp; p.y += (p.ty - p.y) * p.sp; }
-      const moving = Math.abs(p.tx - p.x) + Math.abs(p.ty - p.y) >= 1.5;
-      if (Math.random() < (moving ? 0.03 : 0.004)) p.ch = glyphs[rnd(glyphs.length)];
-      const settled = Math.abs(p.tx - p.x) + Math.abs(p.ty - p.y) < 1.5;
-      ctx.fillStyle = settled ? (Math.random() < 0.003 ? "#ffffff" : "#39ff6a") : "rgba(57,255,106,0.55)";
-      ctx.fillText(p.ch, p.x, p.y);
-    }
-    // glitch: forskudte vandrette skiver med rød/blå kant
-    if (!lockGlitch && t > 1400) { lockGlitch = true; glitchUntil = now + 220; }
-    if (now < glitchUntil && Math.random() < 0.6) {
-      for (let i = 0; i < 3; i++) {
-        const sy = rnd(H), sh = 4 + rnd(24), dx = (Math.random() - .5) * 40;
-        try { ctx.drawImage(cv, 0, sy * dpr, W * dpr, sh * dpr, dx, sy, W, sh); } catch (e) {}
-        ctx.fillStyle = i % 2 ? "rgba(255,95,95,.12)" : "rgba(106,216,255,.12)";
-        ctx.fillRect(0, sy, W, sh);
-      }
-    }
-    requestAnimationFrame(draw);
-  }
-  requestAnimationFrame(draw);
-
-  await wait(1800);
-
-  /* --- fase 4: login (TTY-konsol à la Kali) --- */
-  removeEventListener("keydown", skip);
-  el.removeEventListener("click", skip);
-  document.getElementById("intro-skip").remove();
-  cv.style.transition = "opacity .6s"; cv.style.opacity = ".16";
-  await sleep(reduced ? 0 : 450);
+  /* --- fase 3: login (TTY-konsol à la Kali) --- */
 
   const host = "erkus";
   box.innerHTML = `
@@ -616,7 +543,7 @@ async function intro() {
   inp.setAttribute("aria-label", "Dit navn");
   const hint = document.createElement("div");
   hint.className = "dim";
-  hint.textContent = "\n// skriv dit navn og tryk enter";
+  hint.textContent = "\n// skriv dit navn og tryk enter\n// eller tryk bare enter for at logge ind som visitor";
   body.append(row, inp, hint);
   box.classList.add("show");
   el.addEventListener("click", () => inp.focus());
@@ -651,11 +578,10 @@ async function intro() {
   try { sessionStorage.setItem("user", name); } catch (e) {}
   await sleep(400);
 
-  /* --- fase 5: access granted → CRT off --- */
+  /* --- fase 4: access granted → CRT off --- */
   granted.classList.add("show");
   await sleep(reduced ? 300 : 1000);
 
-  running = false;
   if (!reduced) { el.classList.add("off"); await sleep(560); }
   el.remove();
 }
