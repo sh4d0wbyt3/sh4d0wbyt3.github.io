@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>engin@erkus:~$</title>
+<title>engin.dk</title>
 <meta name="description" content="Engin Erkus — Data Scientist & OSINT Analyst">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>▮</text></svg>">
 <style>
@@ -78,7 +78,7 @@
   /* ===== INTRO ===== */
   #intro {
     position: fixed; inset: 0; z-index: 10; background: #000;
-    overflow: hidden; cursor: pointer; font-weight: normal;
+    overflow: hidden; cursor: pointer;
   }
   #intro canvas { position: absolute; inset: 0; }
   #intro-log {
@@ -101,7 +101,7 @@
     position: absolute; left: 50%; top: 50%;
     transform: translate(-50%, -50%) scale(.96);
     width: min(540px, 90vw); padding: 18px 24px 16px;
-    font-size: 15px; line-height: 1.6; color: #d6d6d6;
+    font-size: 15px; line-height: 1.6; color: var(--fg);
     background:
       linear-gradient(var(--accent), var(--accent)) top left / 22px 2px no-repeat,
       linear-gradient(var(--accent), var(--accent)) top left / 2px 22px no-repeat,
@@ -133,13 +133,13 @@
     font-size: 11px; letter-spacing: .12em; color: var(--dim);
   }
   #intro-login .acc { color: var(--accent); }
-  #intro-login .dim { color: #6b6b6b; }
-  #intro-login .login-input { color: #fff; width: 16ch; }
-  #intro-login .blk { display: inline-block; width: .6em; background: #d6d6d6; animation: blink 1s steps(1) infinite; }
+  #intro-login .dim { color: var(--dim); }
+  #intro-login .login-input { color: var(--fg); width: 16ch; font-weight: bold; }
+  #intro-login .blk { display: inline-block; width: .6em; background: var(--accent); animation: blink 1s steps(1) infinite; }
   #intro-granted {
     position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(.9);
-    padding: 14px 34px; border: 2px solid var(--accent); color: var(--accent); background: #000;
-    font-size: clamp(18px, 3.5vw, 30px); letter-spacing: .35em; font-weight: bold;
+    padding: clamp(12px, 2vw, 16px) clamp(18px, 4vw, 36px); white-space: nowrap; max-width: 94vw; border: 2px solid var(--accent); color: var(--accent); background: #000;
+    font-size: clamp(15px, 3vw, 28px); letter-spacing: .22em; font-weight: bold;
     box-shadow: 0 0 60px rgba(57,255,106,.5); opacity: 0; transition: opacity .15s, transform .25s;
   }
   #intro-granted.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
@@ -163,13 +163,13 @@
   <pre id="intro-log"></pre>
   <div id="intro-scan"></div>
   <div id="intro-login"></div>
-  <div id="intro-granted">ACCESS GRANTED</div>
+  <div id="intro-granted"></div>
 </div>
 <canvas id="rain" aria-hidden="true"></canvas>
 <div id="term" aria-live="polite">
   <div id="out"></div>
   <div id="input-line" hidden>
-    <span class="prompt"><span id="prompt-user">visitor</span>@erkus<span class="dim">:</span><span class="path">~</span><span class="dim">$</span></span>
+    <span class="prompt"><span id="prompt-user">visitor</span>@signal<span class="dim">:</span><span class="path">~</span><span class="dim">$</span></span>
     <input id="input" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Terminal input">
   </div>
 </div>
@@ -368,7 +368,7 @@ function print(html, cls = "") {
 }
 
 function promptHTML(cmd) {
-  return `<span class="prompt">${esc(USER)}@erkus<span class="dim">:</span><span class="path">~</span><span class="dim">$</span></span> ${esc(cmd)}`;
+  return `<span class="prompt">${esc(USER)}@signal<span class="dim">:</span><span class="path">~</span><span class="dim">$</span></span> ${esc(cmd)}`;
 }
 
 function run(raw) {
@@ -464,7 +464,7 @@ async function intro() {
 
   /* --- fase 1: kernel boot --- */
   const bootLines = [
-    "[    0.000000] Linux version 6.9.0-erkus (root@engin) #1 SMP PREEMPT",
+    "[    0.000000] Linux version 6.9.0-signal (root@signal) #1 SMP PREEMPT",
     "[    0.000000] Command line: BOOT_IMAGE=/vmlinuz root=/dev/mapper/crypt ro quiet",
     "[    0.004213] x86/fpu: Supporting XSAVE feature 0x001",
     "[    0.031337] Memory: 16384K/16777216K available",
@@ -527,13 +527,13 @@ async function intro() {
 
   /* --- fase 3: login (TTY-konsol à la Kali) --- */
 
-  const host = "erkus";
+  const host = "signal";
   box.innerHTML = `
     <div class="hdr"><span><span class="dot"></span>${host.toUpperCase()} · TTY1</span><span>SECURE SHELL</span></div>
     <div class="body"></div>
     <div class="ftr">aes-256-gcm · ed25519 · node 07</div>`;
   const body = box.querySelector(".body");
-  body.append(`Engin GNU/Linux Rolling ${host} tty1\n\n`);
+  body.append(`SignalOS 1.0 ${host} tty1\n\n`);
   const row = document.createElement("span");
   row.innerHTML = `<span class="acc">${host} login:</span> `;
   const inp = document.createElement("input");
@@ -566,7 +566,7 @@ async function intro() {
   const d = new Date();
   const stamp = d.toDateString() + " " + d.toTimeString().slice(0, 8);
   const motd = [
-    `<span class="dim">Linux ${host} 6.9.0-erkus #1 SMP PREEMPT_DYNAMIC x86_64</span>`,
+    `<span class="dim">Linux ${host} 6.9.0 #1 SMP x86_64</span>`,
     `<span class="dim">Last login: ${stamp} on tty1</span>`,
     `[ <span class="acc">ok</span> ] authenticated as <span class="acc">${esc(name)}</span>`,
   ];
@@ -578,7 +578,8 @@ async function intro() {
   try { sessionStorage.setItem("user", name); } catch (e) {}
   await sleep(400);
 
-  /* --- fase 4: access granted → CRT off --- */
+  /* --- fase 4: welcome → CRT off --- */
+  granted.textContent = `WELCOME, ${name.toUpperCase()}`;
   granted.classList.add("show");
   await sleep(reduced ? 300 : 1000);
 
