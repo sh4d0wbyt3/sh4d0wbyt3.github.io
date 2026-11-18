@@ -77,8 +77,12 @@
   }
   /* ===== INTRO ===== */
   #intro {
-    position: fixed; inset: 0; z-index: 10; background: #000;
+    position: fixed; inset: 0; z-index: 10; background: var(--bg);
     overflow: hidden; cursor: pointer;
+  }
+  #intro::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px);
   }
   #intro canvas { position: absolute; inset: 0; }
   #intro-log {
@@ -91,7 +95,7 @@
   #intro-log .red { color: var(--err); }
   #intro-scan {
     position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-    width: min(560px, 90vw); font-size: 14px; line-height: 1.7; color: var(--fg);
+    width: min(560px, 90vw); font-size: 15px; line-height: 1.55; color: var(--fg);
     white-space: pre-wrap;
   }
   #intro-scan .k { color: var(--dim); }
@@ -101,7 +105,7 @@
     position: absolute; left: 50%; top: 50%;
     transform: translate(-50%, -50%) scale(.96);
     width: min(540px, 90vw); padding: 18px 24px 16px;
-    font-size: 15px; line-height: 1.6; color: var(--fg);
+    font-size: 15px; line-height: 1.55; color: var(--fg);
     background:
       linear-gradient(var(--accent), var(--accent)) top left / 22px 2px no-repeat,
       linear-gradient(var(--accent), var(--accent)) top left / 2px 22px no-repeat,
@@ -111,7 +115,7 @@
       linear-gradient(var(--accent), var(--accent)) bottom left / 2px 22px no-repeat,
       linear-gradient(var(--accent), var(--accent)) bottom right / 22px 2px no-repeat,
       linear-gradient(var(--accent), var(--accent)) bottom right / 2px 22px no-repeat,
-      rgba(0, 6, 2, .82);
+      rgba(10, 14, 10, .9);
     border: 1px solid rgba(57, 255, 106, .18);
     box-shadow: 0 0 60px rgba(57, 255, 106, .12), inset 0 0 40px rgba(57, 255, 106, .04);
     opacity: 0; transition: opacity .35s, transform .35s; cursor: text;
@@ -119,7 +123,7 @@
   #intro-login.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   #intro-login .hdr {
     display: flex; justify-content: space-between; gap: 12px;
-    font-size: 11px; letter-spacing: .18em; color: var(--dim);
+    font-size: 13px; color: var(--dim);
     border-bottom: 1px solid rgba(57, 255, 106, .18); padding-bottom: 8px; margin-bottom: 14px;
   }
   #intro-login .dot {
@@ -130,7 +134,7 @@
   #intro-login .body { white-space: pre-wrap; min-height: 11.2em; }
   #intro-login .ftr {
     margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(57, 255, 106, .12);
-    font-size: 11px; letter-spacing: .12em; color: var(--dim);
+    font-size: 13px; color: var(--dim);
   }
   #intro-login .acc { color: var(--accent); }
   #intro-login .dim { color: var(--dim); }
@@ -529,7 +533,7 @@ async function intro() {
 
   const host = "signal";
   box.innerHTML = `
-    <div class="hdr"><span><span class="dot"></span>${host.toUpperCase()} · TTY1</span><span>SECURE SHELL</span></div>
+    <div class="hdr"><span><span class="dot"></span>${host}:tty1</span><span>secure shell</span></div>
     <div class="body"></div>
     <div class="ftr">aes-256-gcm · ed25519 · node 07</div>`;
   const body = box.querySelector(".body");
