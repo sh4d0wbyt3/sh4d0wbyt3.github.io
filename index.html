@@ -44,6 +44,7 @@
   .prompt { color: var(--accent); }
   .prompt .path { color: var(--link); }
   #input-line { display: flex; gap: .6ch; }
+  [hidden] { display: none !important; }
   #input {
     flex: 1; background: transparent; border: 0; outline: 0;
     color: var(--fg); font: inherit; caret-color: var(--accent);
@@ -70,6 +71,10 @@
     96% { text-shadow: 1px 0 var(--err), -1px 0 var(--link); transform: none; }
   }
   .bar { color: var(--accent); }
+  .login-input {
+    background: transparent; border: 0; outline: 0; width: 18ch;
+    color: var(--fg); font: inherit; caret-color: var(--accent);
+  }
   /* ===== INTRO ===== */
   #intro {
     position: fixed; inset: 0; z-index: 10; background: #000;
@@ -92,12 +97,15 @@
   #intro-scan .k { color: var(--dim); }
   #intro-scan .v { color: var(--accent); }
   #intro-scan .cur { display: inline-block; width: .6em; background: var(--accent); animation: blink 1s steps(1) infinite; }
-  #intro-sub {
-    position: absolute; left: 0; right: 0; top: calc(50% + min(14vw, 140px));
-    text-align: center; color: var(--fg); letter-spacing: .3em; font-size: clamp(11px, 1.8vw, 15px);
-    opacity: 0; transition: opacity .6s;
+  #intro-login {
+    position: absolute; left: 0; top: 0; padding: 16px 20px;
+    font-size: 15px; line-height: 1.6; color: #d0d0d0; white-space: pre-wrap;
+    opacity: 0; cursor: text;
   }
-  #intro-sub.show { opacity: 1; }
+  #intro-login.show { opacity: 1; }
+  #intro-login .dim { color: #6b6b6b; }
+  #intro-login .login-input { color: #fff; }
+  #intro-login .blk { display: inline-block; width: .6em; background: #d0d0d0; animation: blink 1s steps(1) infinite; }
   #intro-granted {
     position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(.9);
     padding: 14px 34px; border: 2px solid var(--accent); color: var(--accent); background: #000;
@@ -110,8 +118,6 @@
     color: var(--dim); font-size: 11px; letter-spacing: .15em; animation: blink 1.4s steps(1) infinite;
   }
   @keyframes blink { 50% { opacity: 0; } }
-  #intro.flash { animation: flash .18s steps(2) 2; }
-  @keyframes flash { 50% { filter: invert(1); } }
   #intro.off { animation: crt-off .55s ease-in forwards; }
   @keyframes crt-off {
     0%   { transform: scale(1, 1); filter: brightness(1); }
@@ -120,7 +126,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    #intro { display: none; }
+    #intro, #intro * { animation: none !important; transition: none !important; }
     .glitch { animation: none; }
     #rain { display: none; }
   }
@@ -131,7 +137,7 @@
   <canvas id="intro-canvas"></canvas>
   <pre id="intro-log"></pre>
   <div id="intro-scan"></div>
-  <div id="intro-sub"></div>
+  <div id="intro-login"></div>
   <div id="intro-granted">ACCESS GRANTED</div>
   <div id="intro-skip">tryk på en tast for at springe over</div>
 </div>
@@ -139,7 +145,7 @@
 <div id="term" aria-live="polite">
   <div id="out"></div>
   <div id="input-line" hidden>
-    <span class="prompt">visitor@erkus<span class="dim">:</span><span class="path">~</span><span class="dim">$</span></span>
+    <span class="prompt"><span id="prompt-user">visitor</span>@erkus<span class="dim">:</span><span class="path">~</span><span class="dim">$</span></span>
     <input id="input" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Terminal input">
   </div>
 </div>
@@ -233,7 +239,7 @@ Tilgængelige kommandoer:
 <span class="dim">tip: ↑/↓ for historik, tab for autocomplete</span>`,
   matrix: () => {
     const on = rainEl.classList.toggle("loud");
-    return on ? `<span class="acc">wake up, visitor...</span>` : `<span class="dim">back to normal.</span>`;
+    return on ? `<span class="acc">wake up, ${esc(USER)}...</span>` : `<span class="dim">back to normal.</span>`;
   },
   whois: () => {
     const n = navigator, s = screen;
@@ -244,7 +250,7 @@ Tilgængelige kommandoer:
     const br = /Edg\//.test(n.userAgent) ? "Edge" : /Chrome\//.test(n.userAgent) ? "Chrome"
       : /Firefox\//.test(n.userAgent) ? "Firefox" : /Safari\//.test(n.userAgent) ? "Safari" : "ukendt";
     return `
-<span class="acc">## whois visitor</span>
+<span class="acc">## whois ${esc(USER)}</span>
 os          ${os}
 browser     ${br}
 sprog       ${esc(n.language || "?")}
@@ -320,7 +326,7 @@ dark mode   ${matchMedia("(prefers-color-scheme: dark)").matches ? "ja" : "nej"}
     }
     return `<span class="err">ACCESS DENIED.</span> forkert kodeord.`;
   },
-  sudo: () => `<span class="err">visitor is not in the sudoers file. This incident will be reported.</span>`,
+  sudo: () => `<span class="err">${esc(USER)} is not in the sudoers file. This incident will be reported.</span>`,
   date: () => new Date().toString(),
   echo: (...a) => esc(a.join(" ")),
   banner: () => `<div class="ascii glitch">${BANNER}</div>`,
@@ -338,7 +344,7 @@ function print(html, cls = "") {
 }
 
 function promptHTML(cmd) {
-  return `<span class="prompt">visitor@erkus<span class="dim">:</span><span class="path">~</span><span class="dim">$</span></span> ${esc(cmd)}`;
+  return `<span class="prompt">${esc(USER)}@erkus<span class="dim">:</span><span class="path">~</span><span class="dim">$</span></span> ${esc(cmd)}`;
 }
 
 function run(raw) {
@@ -372,12 +378,12 @@ out.addEventListener("click", (e) => {
   const t = e.target.closest(".cmd");
   if (t) { run(t.dataset.cmd); input.focus(); }
 });
-term.addEventListener("click", () => { if (!getSelection().toString()) input.focus(); });
+term.addEventListener("click", () => { if (!getSelection().toString()) (activeInput || input).focus(); });
 
 function showHome() {
   print(`<div class="ascii glitch">${BANNER}</div>`);
   print(`${ME.title}\n`);
-  print(`Velkommen. Skriv ${c("help")} for at komme i gang — eller klik på en kommando.\n`);
+  print(`Velkommen, <span class="acc">${esc(USER)}</span>. Skriv ${c("help")} for at komme i gang — eller klik på en kommando.\n`);
 }
 
 /* matrix rain */
@@ -417,18 +423,19 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 /* ===== INTRO ===== */
 async function intro() {
   const el = document.getElementById("intro");
-  let seen = false;
-  try { seen = sessionStorage.getItem("introSeen") === "1"; } catch (e) {}
-  if (seen || matchMedia("(prefers-reduced-motion: reduce)").matches) { el.remove(); return; }
+  let saved = null;
+  try { saved = sessionStorage.getItem("user"); } catch (e) {}
+  if (saved) { setUser(saved); el.remove(); return; }
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const log = document.getElementById("intro-log");
   const scan = document.getElementById("intro-scan");
-  const sub = document.getElementById("intro-sub");
+  const box = document.getElementById("intro-login");
   const granted = document.getElementById("intro-granted");
   const cv = document.getElementById("intro-canvas");
   const ctx = cv.getContext("2d");
 
-  let skipped = false;
+  let skipped = reduced;
   const skip = () => { skipped = true; };
   addEventListener("keydown", skip);
   el.addEventListener("click", skip);
@@ -524,7 +531,7 @@ async function intro() {
     }
   }
   const t0 = performance.now();
-  let glitchUntil = 0, running = true;
+  let glitchUntil = 0, running = true, lockGlitch = false;
   function draw(now) {
     if (!running) return;
     const t = now - t0;
@@ -532,15 +539,17 @@ async function intro() {
     ctx.fillRect(0, 0, W, H);
     ctx.font = `${gap + 3}px monospace`;
     for (const p of parts) {
-      p.x += (p.tx - p.x) * p.sp; p.y += (p.ty - p.y) * p.sp;
-      if (Math.random() < 0.03) p.ch = glyphs[rnd(glyphs.length)];
+      if (skipped) { p.x = p.tx; p.y = p.ty; }
+      else { p.x += (p.tx - p.x) * p.sp; p.y += (p.ty - p.y) * p.sp; }
+      const moving = Math.abs(p.tx - p.x) + Math.abs(p.ty - p.y) >= 1.5;
+      if (Math.random() < (moving ? 0.03 : 0.004)) p.ch = glyphs[rnd(glyphs.length)];
       const settled = Math.abs(p.tx - p.x) + Math.abs(p.ty - p.y) < 1.5;
-      ctx.fillStyle = settled ? (Math.random() < 0.02 ? "#ffffff" : "#39ff6a") : "rgba(57,255,106,0.55)";
+      ctx.fillStyle = settled ? (Math.random() < 0.003 ? "#ffffff" : "#39ff6a") : "rgba(57,255,106,0.55)";
       ctx.fillText(p.ch, p.x, p.y);
     }
     // glitch: forskudte vandrette skiver med rød/blå kant
-    if (now < glitchUntil || (t > 1500 && Math.random() < 0.04)) {
-      if (now >= glitchUntil) glitchUntil = now + 90;
+    if (!lockGlitch && t > 1400) { lockGlitch = true; glitchUntil = now + 220; }
+    if (now < glitchUntil && Math.random() < 0.6) {
       for (let i = 0; i < 3; i++) {
         const sy = rnd(H), sh = 4 + rnd(24), dx = (Math.random() - .5) * 40;
         try { ctx.drawImage(cv, 0, sy * dpr, W * dpr, sh * dpr, dx, sy, W, sh); } catch (e) {}
@@ -552,21 +561,75 @@ async function intro() {
   }
   requestAnimationFrame(draw);
 
-  await wait(2300);
+  await wait(1800);
 
-  /* --- fase 4: access granted → CRT off --- */
-  el.classList.add("flash");
-  granted.classList.add("show");
-  await wait(skipped ? 0 : 900);
-
-  running = false;
-  el.classList.add("off");
-  await sleep(560);
-  el.remove();
+  /* --- fase 4: login (TTY-konsol à la Kali) --- */
   removeEventListener("keydown", skip);
-  try { sessionStorage.setItem("introSeen", "1"); } catch (e) {}
+  el.removeEventListener("click", skip);
+  document.getElementById("intro-skip").remove();
+  running = false;
+  cv.style.transition = "opacity .5s"; cv.style.opacity = "0";
+  await sleep(reduced ? 0 : 550);
+
+  const host = "erkus";
+  box.innerHTML = `Engin GNU/Linux Rolling ${host} tty1\n\n`;
+  const row = document.createElement("span");
+  row.textContent = `${host} login: `;
+  const inp = document.createElement("input");
+  inp.className = "login-input";
+  inp.maxLength = 16;
+  inp.autocomplete = "off"; inp.spellcheck = false; inp.setAttribute("autocapitalize", "off");
+  inp.setAttribute("aria-label", "Dit navn");
+  const hint = document.createElement("div");
+  hint.className = "dim";
+  hint.textContent = "\n// skriv dit navn og tryk enter";
+  box.append(row, inp, hint);
+  box.classList.add("show");
+  el.addEventListener("click", () => inp.focus());
+  inp.focus();
+
+  const raw = await new Promise(res => inp.addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); res(inp.value); }
+  }));
+  const name = raw.toLowerCase().replace(/[^a-z0-9æøå_-]/g, "").slice(0, 16) || "visitor";
+  inp.replaceWith(document.createTextNode(name + "\n"));
+  hint.remove();
+
+  // Password: ekkoer intet, ligesom en rigtig konsol
+  const pw = document.createElement("span");
+  pw.innerHTML = `Password: <span class="blk">&nbsp;</span>`;
+  box.appendChild(pw);
+  await sleep(900);
+  pw.innerHTML = "Password: \n";
+
+  const d = new Date();
+  const stamp = d.toDateString() + " " + d.toTimeString().slice(0, 8);
+  const motd = [
+    `Linux ${host} 6.9.0-erkus #1 SMP PREEMPT_DYNAMIC x86_64`,
+    "",
+    `Last login: ${stamp} on tty1`,
+    "",
+  ];
+  for (const m of motd) { box.append(m + "\n"); await sleep(110); }
+  setUser(name);
+  try { sessionStorage.setItem("user", name); } catch (e) {}
+  await sleep(400);
+
+  /* --- fase 5: access granted → CRT off --- */
+  granted.classList.add("show");
+  await sleep(reduced ? 300 : 1000);
+
+  if (!reduced) { el.classList.add("off"); await sleep(560); }
+  el.remove();
 }
 
+/* ===== LOGIN ===== */
+let USER = "visitor";
+let activeInput = null;
+function setUser(n) {
+  USER = n;
+  document.getElementById("prompt-user").textContent = n;
+}
 async function boot() {
   await intro();
   const steps = [
