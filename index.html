@@ -104,36 +104,42 @@
   #intro-login {
     position: absolute; left: 50%; top: 50%;
     transform: translate(-50%, -50%) scale(.96);
-    width: min(540px, 90vw); padding: 18px 24px 16px;
+    width: min(720px, 92vw);
     font-size: 15px; line-height: 1.55; color: var(--fg);
-    background:
-      linear-gradient(var(--accent), var(--accent)) top left / 22px 2px no-repeat,
-      linear-gradient(var(--accent), var(--accent)) top left / 2px 22px no-repeat,
-      linear-gradient(var(--accent), var(--accent)) top right / 22px 2px no-repeat,
-      linear-gradient(var(--accent), var(--accent)) top right / 2px 22px no-repeat,
-      linear-gradient(var(--accent), var(--accent)) bottom left / 22px 2px no-repeat,
-      linear-gradient(var(--accent), var(--accent)) bottom left / 2px 22px no-repeat,
-      linear-gradient(var(--accent), var(--accent)) bottom right / 22px 2px no-repeat,
-      linear-gradient(var(--accent), var(--accent)) bottom right / 2px 22px no-repeat,
-      rgba(10, 14, 10, .9);
-    border: 1px solid rgba(57, 255, 106, .18);
-    box-shadow: 0 0 60px rgba(57, 255, 106, .12), inset 0 0 40px rgba(57, 255, 106, .04);
+    background: #0b0f0b; border-radius: 10px; overflow: hidden;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .7), 0 0 0 1px rgba(255, 255, 255, .08), 0 0 50px rgba(57, 255, 106, .08);
     opacity: 0; transition: opacity .35s, transform .35s; cursor: text;
   }
   #intro-login.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  #intro-login { overflow: hidden; }
-  #intro-login .sweep {
-    position: absolute; left: 0; right: 0; top: -40%; height: 40%; pointer-events: none;
-    background: linear-gradient(to bottom, transparent, rgba(57, 255, 106, .07) 85%, rgba(57, 255, 106, .18));
-    animation: sweep 3.2s linear infinite;
+  #intro-login .titlebar {
+    display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 8px;
+    background: #2b2b2b; border-bottom: 1px solid #1c1c1c;
+    font: 600 13px/1 system-ui, "Ubuntu", "Segoe UI", sans-serif; color: #e6e6e6;
+    user-select: none; cursor: grab;
   }
-  @keyframes sweep { to { top: 100%; } }
-  #intro-login .bars span { display: inline-block; width: 4px; margin-left: 2px; background: var(--accent); vertical-align: bottom; animation: bar 1.2s ease-in-out infinite; }
-  #intro-login .bars span:nth-child(1) { height: 5px; }
-  #intro-login .bars span:nth-child(2) { height: 8px; animation-delay: .15s; }
-  #intro-login .bars span:nth-child(3) { height: 11px; animation-delay: .3s; }
-  #intro-login .bars span:nth-child(4) { height: 14px; animation-delay: .45s; }
-  @keyframes bar { 50% { opacity: .25; } }
+  #intro-login .titlebar:active { cursor: grabbing; }
+  #intro-login .tb-title { flex: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #intro-login .tb-btn {
+    width: 30px; height: 28px; border-radius: 6px; display: grid; place-items: center;
+    background: #3a3a3a; color: #e6e6e6; flex: none; cursor: pointer;
+  }
+  #intro-login .tb-btn:hover { background: #474747; }
+  #intro-login .tb-win {
+    width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+    background: #3a3a3a; color: #e6e6e6; flex: none; cursor: pointer; margin-left: 4px;
+  }
+  #intro-login .tb-win:hover { background: #4a4a4a; }
+  #intro-login .tb-win.close { background: #e95420; color: #fff; }
+  #intro-login .tb-win.close:hover { background: #f26b3a; }
+  #intro-login svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+  #intro-login .tb-win svg { width: 10px; height: 10px; stroke-width: 1.8; }
+  #intro-login .body { white-space: pre-wrap; min-height: 18em; padding: 12px 14px 16px; }
+  #intro-login .acc { color: var(--accent); }
+  #intro-login .dim { color: var(--dim); }
+  #intro-login .warnline { color: var(--warn); margin: .8em 0; }
+  #intro-login .ghost { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+  #intro-login .typed { color: var(--fg); }
+  #intro-login .blk { display: inline-block; width: .6em; background: var(--accent); animation: blink 1s steps(1) infinite; }
   #intro-login.jolt { animation: jolt .28s steps(2) 1; }
   @keyframes jolt {
     0%   { transform: translate(-50%, -50%) translateX(0); filter: none; }
@@ -141,33 +147,11 @@
     66%  { transform: translate(-50%, -50%) translateX(3px); }
     100% { transform: translate(-50%, -50%) translateX(0); filter: none; }
   }
-  #intro-login .hdr {
-    display: flex; justify-content: space-between; gap: 12px;
-    font-size: 13px; color: var(--dim);
-    border-bottom: 1px solid rgba(57, 255, 106, .18); padding-bottom: 8px; margin-bottom: 14px;
-  }
-  #intro-login .dot {
-    display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px;
-    background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 1.6s ease-in-out infinite;
-  }
-  @keyframes pulse { 50% { opacity: .3; } }
-  #intro-login .body { white-space: pre-wrap; min-height: 17em; }
-  #intro-login .warnline { color: var(--warn); margin: .8em 0; }
   @media (max-width: 520px) {
-    #intro-login { font-size: 11.5px; padding: 14px 14px 12px; }
-    #intro-login .hdr, #intro-login .ftr { font-size: 10.5px !important; }
+    #intro-login { font-size: 11.5px; }
+    #intro-login .body { padding: 10px 10px 12px; }
+    #intro-login .tb-btn.opt { display: none; }
   }
-  #intro-login .ghost { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
-  #intro-login .typed { color: var(--fg); }
-  #intro-login .ftr {
-    display: flex; justify-content: space-between; align-items: flex-end;
-    margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(57, 255, 106, .12);
-    font-size: 13px; color: var(--dim);
-  }
-  #intro-login .acc { color: var(--accent); }
-  #intro-login .dim { color: var(--dim); }
-  #intro-login .login-input { color: var(--fg); width: 16ch; font-weight: bold; }
-  #intro-login .blk { display: inline-block; width: .6em; background: var(--accent); animation: blink 1s steps(1) infinite; }
   #intro-granted {
     position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(.9);
     padding: clamp(12px, 2vw, 16px) clamp(18px, 4vw, 36px); white-space: nowrap; max-width: 94vw; border: 2px solid var(--accent); color: var(--accent); background: #000;
@@ -201,7 +185,7 @@
 <div id="term" aria-live="polite">
   <div id="out"></div>
   <div id="input-line" hidden>
-    <span class="prompt"><span id="prompt-user">visitor</span>@erkus<span class="dim">:</span><span class="path">~</span><span class="dim">$</span></span>
+    <span class="prompt">engin@erkus<span class="dim">:</span><span class="path">~</span><span class="dim">$</span></span>
     <input id="input" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Terminal input">
   </div>
 </div>
@@ -400,7 +384,7 @@ function print(html, cls = "") {
 }
 
 function promptHTML(cmd) {
-  return `<span class="prompt">${esc(USER)}@erkus<span class="dim">:</span><span class="path">~</span><span class="dim">$</span></span> ${esc(cmd)}`;
+  return `<span class="prompt">engin@erkus<span class="dim">:</span><span class="path">~</span><span class="dim">$</span></span> ${esc(cmd)}`;
 }
 
 function run(raw) {
@@ -561,14 +545,38 @@ async function intro() {
 
   const host = "signal";
   box.innerHTML = `
-    <div class="sweep"></div>
-    <div class="hdr"><span><span class="dot"></span>${host}:tty1 · secure shell</span><span class="clock"></span></div>
-    <div class="body"></div>
-    <div class="ftr"><span>aes-256-gcm · ed25519 · node 07</span><span class="bars"><span></span><span></span><span></span><span></span></span></div>`;
+    <div class="titlebar">
+      <span class="tb-btn" title="Ny fane"><svg viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="M8 5.5v5M5.5 8h5"/></svg></span>
+      <span class="tb-title">guest@${host}: ~</span>
+      <span class="tb-btn opt" title="Søg"><svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.2"/><path d="M10.2 10.2 13.5 13.5"/></svg></span>
+      <span class="tb-btn opt" title="Menu"><svg viewBox="0 0 16 16"><path d="M3 4.5h10M3 8h10M3 11.5h10"/></svg></span>
+      <span class="tb-win" data-win><svg viewBox="0 0 10 10"><path d="M2 5h6"/></svg></span>
+      <span class="tb-win" data-win><svg viewBox="0 0 10 10"><rect x="2" y="2" width="6" height="6"/></svg></span>
+      <span class="tb-win close" data-win><svg viewBox="0 0 10 10"><path d="M2.5 2.5l5 5M7.5 2.5l-5 5"/></svg></span>
+    </div>
+    <div class="body"></div>`;
   const body = box.querySelector(".body");
-  const clock = box.querySelector(".clock");
-  const tick = () => { clock.textContent = new Date().toTimeString().slice(0, 8); };
-  tick(); const clockTimer = setInterval(tick, 1000);
+  // vinduesknapperne virker ikke — der er ingen vej udenom login ;)
+  box.querySelectorAll("[data-win]").forEach(btn => btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    box.classList.remove("jolt"); void box.offsetWidth; box.classList.add("jolt");
+  }));
+  // træk vinduet rundt i titellinjen
+  const bar = box.querySelector(".titlebar");
+  let drag = null;
+  bar.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("[data-win], .tb-btn")) return;
+    const r = box.getBoundingClientRect();
+    drag = { dx: e.clientX - (r.left + r.width / 2), dy: e.clientY - (r.top + r.height / 2) };
+    bar.setPointerCapture(e.pointerId);
+  });
+  bar.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    box.style.left = (e.clientX - drag.dx) + "px";
+    box.style.top = (e.clientY - drag.dy) + "px";
+  });
+  bar.addEventListener("pointerup", () => { drag = null; inpFocus(); });
+  let inpFocus = () => {};
   const type = async (text, speed = 18) => {
     const t = document.createTextNode("");
     body.appendChild(t);
@@ -613,6 +621,7 @@ async function intro() {
   hint.className = "dim";
   hint.textContent = "\n// skriv dit navn og tryk enter\n// eller tryk bare enter for at logge ind som visitor";
   body.append(row, inp, hint);
+  inpFocus = () => inp.focus();
   el.addEventListener("click", () => inp.focus());
   inp.focus();
 
@@ -651,7 +660,6 @@ async function intro() {
   setUser(name);
   try { sessionStorage.setItem("user", name); } catch (e) {}
   await sleep(400);
-  clearInterval(clockTimer);
 
   /* --- fase 4: welcome → CRT off --- */
   granted.textContent = `WELCOME, ${name.toUpperCase()}`;
@@ -666,8 +674,7 @@ async function intro() {
 let USER = "visitor";
 let activeInput = null;
 function setUser(n) {
-  USER = n;
-  document.getElementById("prompt-user").textContent = n;
+  USER = n;   // bruges i velkomst, sudo, matrix og whois — prompten er altid engin@erkus
 }
 async function boot() {
   await intro();
