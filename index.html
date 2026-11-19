@@ -71,6 +71,32 @@
     96% { text-shadow: 1px 0 var(--err), -1px 0 var(--link); transform: none; }
   }
   .bar { color: var(--accent); }
+
+  /* ---- temaer ---- */
+  :root[data-theme="amber"] {
+    --bg: #100c05; --fg: #ffdca8; --dim: #8a6a35; --accent: #ffb000;
+    --warn: #ff8c42; --err: #ff5f5f; --link: #ffd36a;
+  }
+  :root[data-theme="cyberpunk"] {
+    --bg: #0b0716; --fg: #e6e0ff; --dim: #6b5a9a; --accent: #00f0ff;
+    --warn: #f9f871; --err: #ff2b6d; --link: #ff2bd6;
+  }
+
+  /* ---- python-visning (mode code) ---- */
+  .py-k { color: var(--link); }
+  .py-s { color: var(--warn); }
+  .py-c { color: var(--dim); font-style: italic; }
+  .py-f { color: var(--accent); }
+
+  /* ---- neofetch ---- */
+  .nf { display: grid; grid-template-columns: auto 1fr; gap: 0 4ch; align-items: start; margin: .3em 0 .6em; }
+  .nf pre { margin: 0; color: var(--accent); line-height: 1.25; font: inherit; }
+  .nf .lbl { color: var(--accent); }
+  .nf .sw span { display: inline-block; width: 2.4ch; height: 1.15em; vertical-align: middle; }
+  @media (max-width: 640px) { .nf { grid-template-columns: 1fr; } .nf pre { font-size: 11px; margin-bottom: .6em; } }
+
+  /* ---- logout ---- */
+  body.crt-off #term, body.crt-off #rain { animation: crt-off .55s ease-in forwards; }
   .login-input {
     background: transparent; border: 0; outline: 0; width: 18ch;
     color: var(--fg); font: inherit; caret-color: var(--accent);
@@ -152,13 +178,6 @@
     #intro-login .body { padding: 10px 10px 12px; }
     #intro-login .tb-btn.opt { display: none; }
   }
-  #intro-granted {
-    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(.9);
-    padding: clamp(12px, 2vw, 16px) clamp(18px, 4vw, 36px); white-space: nowrap; max-width: 94vw; border: 2px solid var(--accent); color: var(--accent); background: #000;
-    font-size: clamp(15px, 3vw, 28px); letter-spacing: .22em; font-weight: bold;
-    box-shadow: 0 0 60px rgba(57,255,106,.5); opacity: 0; transition: opacity .15s, transform .25s;
-  }
-  #intro-granted.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   @keyframes blink { 50% { opacity: 0; } }
   #intro.off { animation: crt-off .55s ease-in forwards; }
   @keyframes crt-off {
@@ -179,7 +198,6 @@
   <pre id="intro-log"></pre>
   <div id="intro-scan"></div>
   <div id="intro-login"></div>
-  <div id="intro-granted"></div>
 </div>
 <canvas id="rain" aria-hidden="true"></canvas>
 <div id="term" aria-live="polite">
@@ -195,42 +213,95 @@
 const ME = {
   name: "Engin Erkus",
   title: "Data Scientist · OSINT Analyst",
-  email: "engin@engin.dk",                       
+  email: "engin@engin.dk",
   //linkedin: "https://linkedin.com/in/DIT-NAVN",
+  bio: "MSc i Data Science fra SDU. Arbejder med open source intelligence,\ndataanalyse og machine learning — at finde signal i støjen.",
+  education: "MSc i Data Science, SDU",
+  motto: "at finde signal i støjen",
+  languages: ["dansk", "engelsk", "tyrkisk", "arabisk"],
 };
 
-const PAGES = {
-  about: `
+const SKILLS = [
+  { key: "osint", items: ["kildeanalyse", "verifikation", "geolokation", "netværksanalyse"] },
+  { key: "data",  items: ["python", "pandas", "sql", "visualisering"] },
+  { key: "ml",    items: ["pytorch", "bayesian methods", "reinforcement learning", "LLM/RAG"] },
+  { key: "sec",   items: ["linux", "ethical hacking"], note: "lærer stadig" },
+];
+
+const PROJECTS = [
+  { title: "GP-TD3", desc: "Bayesian reinforcement learning med Gaussian Process critics", note: "speciale" },
+  { title: "Lokalt LLM-system med RAG til analysearbejde" },
+  { title: "Skalerbar OSINT-pipeline til virksomhedsverifikation" },
+  { title: "ML-model til intraday-handel på elmarkedet" },
+];
+/* ===== SLUT PÅ INDHOLD ===== */
+
+/* ---- visning: normal og python (mode code) ---- */
+let MODE = "normal";
+try { MODE = localStorage.getItem("mode") || "normal"; } catch (e) {}
+const PYK = (t) => `<span class="py-k">${t}</span>`;
+const PYS = (t) => `<span class="py-s">"${t}"</span>`;
+const PYF = (t) => `<span class="py-f">${t}</span>`;
+const PYC = (t) => `<span class="py-c"># ${t}</span>`;
+const pyList = (arr) => "[" + arr.map(x => PYS(esc(x))).join(", ") + "]";
+
+const VIEW = {
+  normal: {
+    about: () => `
 <span class="acc">## whoami</span>
 ${ME.name} — ${ME.title}
 
-MSc i Data Science fra SDU. Arbejder med open source intelligence,
-dataanalyse og machine learning — at finde signal i støjen.
+${ME.bio}
 
-Sprog: dansk · engelsk · tyrkisk · arabisk`,
-
-  skills: `
+Sprog: ${ME.languages.join(" · ")}`,
+    skills: () => `
 <span class="acc">## skills</span>
-<span class="dim">[osint]</span>    kildeanalyse · verifikation · geolokation · netværksanalyse
-<span class="dim">[data]</span>     python · pandas · sql · visualisering
-<span class="dim">[ml]</span>       pytorch · bayesian methods · reinforcement learning · LLM/RAG
-<span class="dim">[sec]</span>      linux · ethical hacking <span class="dim">(lærer stadig)</span>`,
-
-  projects: `
+` + SKILLS.map(sk => `<span class="dim">[${sk.key}]</span>${" ".repeat(Math.max(1, 11 - sk.key.length - 2))}${sk.items.join(" · ")}${sk.note ? ` <span class="dim">(${sk.note})</span>` : ""}`).join("\n"),
+    projects: () => `
 <span class="acc">## projects</span>
-<span class="warn">01</span>  GP-TD3 — Bayesian reinforcement learning med Gaussian Process critics (speciale)
-<span class="warn">02</span>  Lokalt LLM-system med RAG til analysearbejde
-<span class="warn">03</span>  Skalerbar OSINT-pipeline til virksomhedsverifikation
-<span class="warn">04</span>  ML-model til intraday-handel på elmarkedet`,
+` + PROJECTS.map((p, i) => `<span class="warn">${String(i + 1).padStart(2, "0")}</span>  ${p.desc ? `${p.title} — ${p.desc}` : p.title}${p.note ? ` (${p.note})` : ""}`).join("\n"),
+    contact: () => {
+      let s = `\n<span class="acc">## contact</span>\n`;
+      if (ME.email) s += `mail      <a href="mailto:${ME.email}">${ME.email}</a>\n`;
+      if (ME.linkedin) s += `linkedin  <a href="${ME.linkedin}" target="_blank" rel="noopener">${ME.linkedin.replace("https://", "")}</a>\n`;
+      return s;
+    },
+  },
+  code: {
+    about: () => `
+${PYC("~/about.py")}
+${PYK("class")} ${PYF("Engin")}:
+    <span class="py-s">"""${esc(ME.title)}"""</span>
 
-  contact: () => {
-    let s = `\n<span class="acc">## contact</span>\n`;
-    if (ME.email) s += `mail      <a href="mailto:${ME.email}">${ME.email}</a>\n`;
-    if (ME.linkedin) s += `linkedin  <a href="${ME.linkedin}" target="_blank" rel="noopener">${ME.linkedin.replace("https://", "")}</a>\n`;
-    return s;
+    ${PYK("def")} ${PYF("__init__")}(${PYK("self")}):
+        ${PYK("self")}.name      = ${PYS(esc(ME.name))}
+        ${PYK("self")}.education = ${PYS(esc(ME.education))}
+        ${PYK("self")}.languages = ${pyList(ME.languages)}
+        ${PYK("self")}.motto     = ${PYS(esc(ME.motto))}`,
+    skills: () => `
+${PYC("~/skills.py")}
+skills = {
+` + SKILLS.map(sk => `    ${PYS(sk.key)}:${" ".repeat(Math.max(1, 7 - sk.key.length))}${pyList(sk.items)},${sk.note ? "  " + PYC(esc(sk.note)) : ""}`).join("\n") + `
+}`,
+    projects: () => `
+${PYC("~/projects.py")}
+projects = [
+` + PROJECTS.map(p => `    ${PYF("Project")}(${PYS(esc(p.title))}${p.desc ? `, ${PYS(esc(p.desc))}` : ""}${p.note ? `, tag=${PYS(esc(p.note))}` : ""}),`).join("\n") + `
+]`,
+    contact: () => {
+      let s = `\n${PYC("~/contact.py")}\n${PYK("def")} ${PYF("contact")}():\n    ${PYK("return")} {\n`;
+      if (ME.email) s += `        ${PYS("mail")}: <span class="py-s">"<a href="mailto:${ME.email}">${ME.email}</a>"</span>,\n`;
+      if (ME.linkedin) s += `        ${PYS("linkedin")}: <span class="py-s">"<a href="${ME.linkedin}" target="_blank" rel="noopener">${ME.linkedin.replace("https://", "")}</a>"</span>,\n`;
+      return s + "    }";
+    },
   },
 };
-/* ===== SLUT PÅ INDHOLD ===== */
+const PAGES = {
+  about:    () => VIEW[MODE === "code" ? "code" : "normal"].about(),
+  skills:   () => VIEW[MODE === "code" ? "code" : "normal"].skills(),
+  projects: () => VIEW[MODE === "code" ? "code" : "normal"].projects(),
+  contact:  () => VIEW[MODE === "code" ? "code" : "normal"].contact(),
+};
 
 const out = document.getElementById("out");
 const input = document.getElementById("input");
@@ -276,6 +347,10 @@ Tilgængelige kommandoer:
   ${c("trace")}      spor forbindelsen
   ${c("hack")}       prøv lykken
   ${c("matrix")}     skru op for regnen
+  ${c("neofetch")}   systeminfo
+  ${c("theme")}      skift farvetema (green · amber · cyberpunk)
+  ${c("mode")}       skift visning (normal · code)
+  ${c("exit")}       log ud
 <span class="dim">tip: ↑/↓ for historik, tab for autocomplete</span>`,
   matrix: () => {
     const on = rainEl.classList.toggle("loud");
@@ -327,11 +402,71 @@ dark mode   ${matchMedia("(prefers-color-scheme: dark)").matches ? "ja" : "nej"}
     await sleep(300);
     return `<span class="err">ACCESS DENIED.</span> nice try ;)`;
   },
-  about: () => PAGES.about,
-  whoami: () => PAGES.about,
-  skills: () => PAGES.skills,
-  projects: () => PAGES.projects,
+  about: () => PAGES.about(),
+  whoami: () => PAGES.about(),
+  skills: () => PAGES.skills(),
+  projects: () => PAGES.projects(),
   contact: () => PAGES.contact(),
+
+  neofetch: () => {
+    const logo = [
+      "        ___.---.___",
+      "     .-'    .-.    '-.",
+      "   .'     .'(@)'.     '.",
+      "  /      /  \\_/  \\      \\",
+      "  \\      \\       /      /",
+      "   '.     '.___.'     .'",
+      "     '-.___     ___.-'",
+      "           '---'",
+    ].join("\n");
+    const ua = navigator.userAgent;
+    const br = /Edg\//.test(ua) ? "Edge" : /Chrome\//.test(ua) ? "Chrome" : /Firefox\//.test(ua) ? "Firefox" : /Safari\//.test(ua) ? "Safari" : "browser";
+    const up = Math.floor(performance.now() / 1000);
+    const uptime = up < 60 ? `${up} secs` : up < 3600 ? `${Math.floor(up / 60)} mins` : `${Math.floor(up / 3600)} hours, ${Math.floor(up / 60) % 60} mins`;
+    const row = (k, v) => `<span class="lbl">${k}:</span> ${v}`;
+    const sw = ["--bg", "--dim", "--accent", "--fg", "--warn", "--err", "--link"]
+      .map(v => `<span style="background:var(${v})"></span>`).join("") + `<span style="background:#fff"></span>`;
+    const info = [
+      `<span class="lbl">engin</span>@<span class="lbl">erkus</span>`,
+      "-----------",
+      row("OS", "SignalOS 1.0 x86_64"),
+      row("Host", "engin.dk"),
+      row("Kernel", "6.9.0-erkus"),
+      row("Uptime", uptime),
+      row("Shell", "osint-sh 2.1"),
+      row("Resolution", `${screen.width}x${screen.height}`),
+      row("Terminal", br),
+      row("Theme", THEME),
+      row("Languages", ME.languages.join(" · ")),
+      row("Stack", "python · pytorch · pandas · sql"),
+      row("Focus", "osint · machine learning · security"),
+      "",
+      `<span class="sw">${sw}</span>`,
+      `<span class="sw" style="opacity:.55">${sw}</span>`,
+    ].join("\n");
+    return `<div class="nf"><pre>${esc(logo)}</pre><div>${info}</div></div>`;
+  },
+
+  theme: (name) => {
+    const names = Object.keys(THEMES);
+    if (!name) return `tema: <span class="acc">${THEME}</span>\nvælg: ` + names.map(n => cl(n, "theme " + n)).join("  ");
+    if (!THEMES[name]) return `<span class="err">ukendt tema: ${esc(name)}</span> — vælg: ` + names.map(n => cl(n, "theme " + n)).join("  ");
+    applyTheme(name);
+    return `<span class="acc">tema skiftet til ${name}.</span>`;
+  },
+
+  mode: (m) => {
+    if (!m) return `mode: <span class="acc">${MODE}</span>\nvælg: ${cl("normal", "mode normal")}  ${cl("code", "mode code")}`;
+    if (m !== "code" && m !== "normal") return `<span class="err">ukendt mode: ${esc(m)}</span> — vælg: ${cl("normal", "mode normal")}  ${cl("code", "mode code")}`;
+    MODE = m;
+    try { localStorage.setItem("mode", m); } catch (e) {}
+    return m === "code"
+      ? `<span class="acc">mode code aktiv.</span> prøv ${c("about")}, ${c("skills")}, ${c("projects")} eller ${c("contact")}.`
+      : `<span class="acc">tilbage til normal visning.</span>`;
+  },
+
+  exit: async () => { await logout(); return null; },
+  logout: async () => { await logout(); return null; },
   ls: (arg) => {
     const files = ["about.txt", "skills.txt", "projects.txt", "contact.txt"].map(f => cl(f, "cat " + f));
     if (arg && arg.startsWith("-") && arg.includes("a")) files.push(cl(".hint", "cat .hint"));
@@ -426,6 +561,24 @@ function showHome() {
   print(`Velkommen, <span class="acc">${esc(USER)}</span>. Skriv ${c("help")} for at komme i gang — eller klik på en kommando.\n`);
 }
 
+/* ---- temaer ---- */
+const THEMES = { green: 1, amber: 1, cyberpunk: 1 };
+let THEME = "green";
+const RAIN = { fade: "rgba(10,14,10,0.12)", acc: "#39ff6a", hi: "#d9ffe0" };
+function applyTheme(name) {
+  THEME = THEMES[name] ? name : "green";
+  if (THEME === "green") delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = THEME;
+  try { localStorage.setItem("theme", THEME); } catch (e) {}
+  const cs = getComputedStyle(document.documentElement);
+  const hex = cs.getPropertyValue("--bg").trim();
+  const n = parseInt(hex.slice(1), 16);
+  RAIN.fade = `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},0.12)`;
+  RAIN.acc = cs.getPropertyValue("--accent").trim();
+  RAIN.hi = cs.getPropertyValue("--fg").trim();
+}
+try { applyTheme(localStorage.getItem("theme") || "green"); } catch (e) { applyTheme("green"); }
+
 /* matrix rain */
 const rainEl = document.getElementById("rain");
 (function rain() {
@@ -444,12 +597,12 @@ const rainEl = document.getElementById("rain");
     requestAnimationFrame(frame);
     if (t - last < 55) return;   // ~18 fps — rolig og let for CPU'en
     last = t;
-    ctx.fillStyle = "rgba(10,14,10,0.12)";
+    ctx.fillStyle = RAIN.fade;
     ctx.fillRect(0, 0, rainEl.width, rainEl.height);
     ctx.font = size + "px monospace";
     for (let i = 0; i < cols; i++) {
       const y = drops[i] * size;
-      ctx.fillStyle = Math.random() < 0.04 ? "#d9ffe0" : "#39ff6a";
+      ctx.fillStyle = Math.random() < 0.04 ? RAIN.hi : RAIN.acc;
       ctx.fillText(chars[Math.random() * chars.length | 0], i * size, y);
       if (y > rainEl.height && Math.random() > 0.975) drops[i] = 0;
       drops[i]++;
@@ -461,7 +614,7 @@ const rainEl = document.getElementById("rain");
 /* boot sequence */
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 /* ===== INTRO ===== */
-async function intro() {
+async function intro(opts = {}) {
   const el = document.getElementById("intro");
   let saved = null;
   try { saved = sessionStorage.getItem("user"); } catch (e) {}
@@ -471,9 +624,8 @@ async function intro() {
   const log = document.getElementById("intro-log");
   const scan = document.getElementById("intro-scan");
   const box = document.getElementById("intro-login");
-  const granted = document.getElementById("intro-granted");
 
-  let skipped = reduced;
+  let skipped = reduced || !!opts.loginOnly;
   const wait = async (ms) => { const end = Date.now() + ms; while (!skipped && Date.now() < end) await sleep(16); };
   const rnd = (n) => Math.random() * n | 0;
   const hex = (n) => Array.from({ length: n }, () => rnd(16).toString(16)).join("");
@@ -651,6 +803,7 @@ async function intro() {
   const motd = [
     `<span class="dim">Last login: ${stamp} from tunnel</span>`,
     `[<span class="acc">+</span>] access granted · <span class="acc">${esc(name)}</span>@${host}`,
+    `<span class="acc">welcome, ${esc(name)}.</span>`,
   ];
   for (const m of motd) {
     const l = document.createElement("div"); l.innerHTML = m; body.appendChild(l);
@@ -661,10 +814,8 @@ async function intro() {
   try { sessionStorage.setItem("user", name); } catch (e) {}
   await sleep(400);
 
-  /* --- fase 4: welcome → CRT off --- */
-  granted.textContent = `WELCOME, ${name.toUpperCase()}`;
-  granted.classList.add("show");
-  await sleep(reduced ? 300 : 1000);
+  /* --- fase 4: CRT off --- */
+  await sleep(reduced ? 300 : 900);
 
   if (!reduced) { el.classList.add("off"); await sleep(560); }
   el.remove();
@@ -676,8 +827,8 @@ let activeInput = null;
 function setUser(n) {
   USER = n;   // bruges i velkomst, sudo, matrix og whois — prompten er altid engin@erkus
 }
-async function boot() {
-  await intro();
+async function boot(opts = {}) {
+  await intro(opts);
   const steps = [
     ["[ ok ] initializing session...", "dim"],
     ["[ ok ] routing through 3 relays...", "dim"],
@@ -689,6 +840,19 @@ async function boot() {
   inputLine.hidden = false;
   input.focus();
 }
+async function logout() {
+  print(`<span class="dim">logout\nConnection to engin.dk closed.</span>`);
+  await sleep(600);
+  try { sessionStorage.removeItem("user"); } catch (e) {}
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!reduced) { document.body.classList.add("crt-off"); await sleep(600); }
+  out.innerHTML = "";
+  document.body.insertAdjacentHTML("afterbegin", INTRO_HTML);
+  document.body.classList.remove("crt-off");
+  await boot({ loginOnly: true });
+}
+
+const INTRO_HTML = document.getElementById("intro").outerHTML;
 boot();
 </script>
 </body>
